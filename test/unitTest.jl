@@ -22,9 +22,22 @@ mix = [0.3, 0.7]
 end
 
 @testset "mStep" begin
-    posteriors = [[1.0, 0.0], [1.0, 0.0], [0.0, 1.0], [0.0, 1.0]]
-    @test estimateNumberOfClusterDataPoints(posteriors) == [2.0, 2.0]
-    @test updateMu
-    #@test updateSigma
-    #@test updateMix
+    dataA = [1.0 2.0; 100.0 100.0]
+    dataB = [1.0 5.0; 1000.0 1000.0]
+    posteriors = [[1.0, 0.0], [0.0, 1.0]]
+    @test estimateNumberOfClusterDataPoints(posteriors) == [1.0, 1.0]
+
+    estimatedNumberOfClusterDataPoints = [1.0, 1.0]
+    @test updateMu(posteriors, dataA, estimatedNumberOfClusterDataPoints) == [(posteriors[1][1] * dataA[1, :] + posteriors[2][1] * dataA[2, :]) / estimatedNumberOfClusterDataPoints[1],
+    (posteriors[1][2] * dataA[1, :] + posteriors[2][2] * dataA[2, :]) / estimatedNumberOfClusterDataPoints[2]]
+    @test updateMu(posteriors, dataB, estimatedNumberOfClusterDataPoints) == [(posteriors[1][1] * dataB[1, :] + posteriors[2][1] * dataB[2, :]) / estimatedNumberOfClusterDataPoints[1],
+    (posteriors[1][2] * dataB[1, :] + posteriors[2][2] * dataB[2, :]) / estimatedNumberOfClusterDataPoints[2]]
+
+    @test updateSigma(posteriors, dataA, estimatedNumberOfClusterDataPoints, mu) == [(posteriors[1][1] * (dataA[1, :] - mu[1]) * (dataA[1, :] - mu[1])' + posteriors[2][1] * (dataA[2, :] - mu[1]) * (dataA[2, :] - mu[1])') / estimatedNumberOfClusterDataPoints[1],
+    (posteriors[1][2] * (dataA[1, :] - mu[2]) * (dataA[1, :] - mu[2])' + posteriors[2][2] * (dataA[2, :] - mu[2]) * (dataA[2, :] - mu[2])') / estimatedNumberOfClusterDataPoints[2]]
+    @test updateSigma(posteriors, dataB, estimatedNumberOfClusterDataPoints, mu) == [(posteriors[1][1] * (dataB[1, :] - mu[1]) * (dataB[1, :] - mu[1])' + posteriors[2][1] * (dataB[2, :] - mu[1]) * (dataB[2, :] - mu[1])') / estimatedNumberOfClusterDataPoints[1],
+    (posteriors[1][2] * (dataB[1, :] - mu[2]) * (dataB[1, :] - mu[2])' + posteriors[2][2] * (dataB[2, :] - mu[2]) * (dataB[2, :] - mu[2])') / estimatedNumberOfClusterDataPoints[2]]
+
+    @test updateMix(estimatedNumberOfClusterDataPoints) == [0.5, 0.5]
+    println(mStep(dataA, posteriors))
 end

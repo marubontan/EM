@@ -52,37 +52,14 @@ function adjustToSymmetricMatrix(matrix)
 end
 
 function mStep(data, posteriors)
-    clusterNumber = length(posteriors[1])
-    dataCharacteristics = size(data)[2]
+    # TODO: fix dirty variable name
+    estimatedNumberOfClusterDataPoints = estimateNumberOfClusterDataPoints(posteriors)
 
-    nkArray = []
-    for (index,posterior) in enumerate(posteriors)
-        if index == 1
-            nkArray = posterior
-        else
-            nkArray += posterior
-        end
-    end
-    ukArray = []
-    sigmaArray = []
-    for (index, nK) in enumerate(nkArray)
-        uK = zeros(size(data)[2])
-        for i in 1:size(data)[1]
-            uK += posteriors[i][index] * data[i, :]
-        end
-        uK /= nK
+    updatedMu = updateMu(posteriors, data, estimatedNumberOfClusterDataPoints)
+    updatedSigma = updateSigma(posteriors, data, estimatedNumberOfClusterDataPoints,updatedMu)
+    updatedMix = updateMix(estimatedNumberOfClusterDataPoints)
 
-        sigma = zeros(dataCharacteristics, dataCharacteristics)
-        for i in 1:size(data)[1]
-            sigma += posteriors[i][index] * (data[i, :] - uK) * (data[i, :] - uK)'
-        end
-        sigma /= nK
-
-        push!(ukArray, uK)
-        push!(sigmaArray, sigma)
-    end
-    mix = nkArray / sum(nkArray)
-    return ukArray, sigmaArray, mix
+    return updatedMu, updatedSigma, updatedMix
 end
 
 function estimateNumberOfClusterDataPoints(posteriors::Array)
@@ -92,4 +69,32 @@ function estimateNumberOfClusterDataPoints(posteriors::Array)
         numberOfClusterDataPoints += posterior
     end
     return numberOfClusterDataPoints
+end
+
+function updateMu(posteriors, data, estimatedNumberOfClusterDataPoints)
+    updatedMuArray = []
+    for k in 1:length(estimatedNumberOfClusterDataPoints)
+        muSum = 0
+        for i in 1:size(data)[1]
+            muSum += posteriors[i][k] * data[i, :]
+        end
+        push!(updatedMuArray, muSum/estimatedNumberOfClusterDataPoints[k])
+    end
+    return updatedMuArray
+end
+
+function updateSigma(posteriors, data, estimatedNumberOfClusterDataPoints, mu)
+    updatedSigmaArray = []
+    for k in 1:length(estimatedNumberOfClusterDataPoints)
+        sigmaSum = 0
+        for i in 1:size(data)[1]
+            sigmaSum += posteriors[i][k] * (data[i, :] - mu[k]) * (data[i, :] - mu[k])'
+        end
+        push!(updatedSigmaArray, sigmaSum/estimatedNumberOfClusterDataPoints[k])
+    end
+    return updatedSigmaArray
+end
+
+function updateMix(estimatedNumberOfClusterDataPoints)
+    return estimatedNumberOfClusterDataPoints / sum(estimatedNumberOfClusterDataPoints)
 end

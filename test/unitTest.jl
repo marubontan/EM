@@ -3,36 +3,28 @@ using Distributions
 
 include("../src/em.jl")
 @testset "support function" begin
-sigma = eye(2)
-sigma[1,2] = 3
+    sigma = eye(2)
+    sigma[1,2] = 3
 
-@test adjustToSymmetricMatrix(sigma) == [1 0;0 1]
+    @test adjustToSymmetricMatrix(sigma) == [1 0;0 1]
 end
 
-@testset "E and M step" begin
-# data
-groupOne = rand(MvNormal([1,1], eye(2)), 100)
-groupTwo = rand(MvNormal([10,10], eye(2)), 100)
-groupThree = rand(MvNormal([100, 100], eye(2)), 100)
-
-data = hcat(groupOne, groupTwo, groupThree)'
-
-mu = [rand(Normal(0, 10), 2) for i in 1:3]
-sigma = rand(Wishart(4, eye(2)), 3)
-mixTemp = rand(3)
-mix = mixTemp / sum(mixTemp)
-
-posteriors = eStep(data, mu, sigma, mix)
-muTemp, sigmaTemp, mixTemp = mStep(data, posteriors)
+data = [1.0 2.0; 2.0 1.0; 100.0 100.0; 90.0 110.0]
+mu = [[0.0, 0.0], [100.0, 100.0]]
+sigma = [[1.0 0.0; 0.0 1.0], [2.0 0.0; 0.0 2.0]]
+mix = [0.3, 0.7]
+@testset "eStep" begin
+    @test getPosterior(data[1, :], mu[1], sigma[1], mix[1]) == 0.3 * pdf(MvNormal([0.0, 0.0], [1 0; 0 1]), [1, 2])
+    posteriors = [1, 2, 3, 4]
+    @test getPosteriorProbability(posteriors) == [0.1, 0.2, 0.3, 0.4]
+    # TODO: write proper test
+    println(eStep(data, mu, sigma, mix))
 end
 
-@testset "EM" begin
-# data
-groupOne = rand(MvNormal([1,1], eye(2)), 100)
-groupTwo = rand(MvNormal([10,10], eye(2)), 100)
-groupThree = rand(MvNormal([100, 100], eye(2)), 100)
-
-data = hcat(groupOne, groupTwo, groupThree)'
-
-println(EM(data, 3))
+@testset "mStep" begin
+    posteriors = [[1.0, 0.0], [1.0, 0.0], [0.0, 1.0], [0.0, 1.0]]
+    @test estimateNumberOfClusterDataPoints(posteriors) == [2.0, 2.0]
+    @test updateMu
+    #@test updateSigma
+    #@test updateMix
 end

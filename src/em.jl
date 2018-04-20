@@ -18,29 +18,26 @@ function EM(data, k)
     return mu, sigma, mix
 end
 
-function eStep(data, mu, sigma, mix)
-    dataNum = size(data)[1]
-    K = length(mix)
-
-    posteriors = []
-    for i in 1:dataNum
-        posteriorK = []
-
-        for k in 1:K
-            try
-                #sigma[k] = adjustToSymmetricMatrix(sigma[k])
-                push!(posteriorK, mix[k] * pdf(MvNormal(mu[k], sigma[k]), data[i, :]))
-            catch
-                println(sigma[k])
-            end
+# TODO: refactoring
+function eStep(data::Array, mu::Array, sigma::Array, mix::Array)
+    posteriorArray = []
+    for i in 1:size(data)[1]
+        posteriors = Array{Float64}(length(mix))
+        for j in 1:length(mix)
+            posterior = getPosterior(data[i,:], mu[j], sigma[j], mix[j])
+            posteriors[j] = posterior
         end
-        all = sum(posteriorK)
-        if all != 0
-            posteriorK = posteriorK / all
-        end
-        push!(posteriors, posteriorK)
+        push!(posteriorArray, getPosteriorProbability(posteriors))
     end
-    return posteriors
+    return posteriorArray
+end
+
+function getPosterior(data::Array, mu::Array, sigma::Array, mix::Float64)
+    return mix * pdf(MvNormal(mu, sigma), data)
+end
+
+function getPosteriorProbability(posteriors)
+    return posteriors / sum(posteriors)
 end
 
 function adjustToSymmetricMatrix(matrix)
@@ -86,4 +83,13 @@ function mStep(data, posteriors)
     end
     mix = nkArray / sum(nkArray)
     return ukArray, sigmaArray, mix
+end
+
+function estimateNumberOfClusterDataPoints(posteriors::Array)
+    clusterNum = length(posteriors[1])
+    numberOfClusterDataPoints = zeros(clusterNum)
+    for posterior in posteriors
+        numberOfClusterDataPoints += posterior
+    end
+    return numberOfClusterDataPoints
 end

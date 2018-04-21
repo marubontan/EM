@@ -1,9 +1,9 @@
 using Distributions
 
 function EM(data, k)
-    mu = [rand(Normal(0, 100), 2) for i in 1:3]
-    sigma = rand(Wishart(3, 1000 * eye(2)), 3)
-    mixTemp = rand(3)
+    mu = [rand(Normal(0, 100), 2) for i in 1:2]
+    sigma = rand(Wishart(3, 1000 * eye(2)), 2)
+    mixTemp = rand(2)
     mix = mixTemp / sum(mixTemp)
 
     posterior = eStep(data, mu, sigma, mix)
@@ -16,7 +16,7 @@ function EM(data, k)
         end
         posterior = posteriorTemp
     end
-    return mu, sigma, mix
+    return mu, sigma, mix, posterior
 end
 
 # TODO: refactoring

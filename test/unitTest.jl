@@ -7,6 +7,10 @@ include("../src/em.jl")
     sigma[1,2] = 3
 
     @test adjustToSymmetricMatrix(sigma) == [1 0;0 1]
+
+
+    @test argMax([3, 2, 1]) == 1
+    @test argMax([5, 3, 6]) == 3
 end
 
 data = [1.0 2.0; 2.0 1.0; 100.0 100.0; 90.0 110.0]
@@ -14,9 +18,9 @@ mu = [[0.0, 0.0], [100.0, 100.0]]
 sigma = [[1.0 0.0; 0.0 1.0], [2.0 0.0; 0.0 2.0]]
 mix = [0.3, 0.7]
 @testset "eStep" begin
-    @test getPosterior(data[1, :], mu[1], sigma[1], mix[1]) == 0.3 * pdf(MvNormal([0.0, 0.0], [1 0; 0 1]), [1, 2])
+    @test calculatePosterior(data[1, :], mu[1], sigma[1], mix[1]) == 0.3 * pdf(MvNormal([0.0, 0.0], [1 0; 0 1]), [1, 2])
     posteriors = [1, 2, 3, 4]
-    @test getPosteriorProbability(posteriors) == [0.1, 0.2, 0.3, 0.4]
+    @test makeArrayRatio(posteriors) == [0.1, 0.2, 0.3, 0.4]
     # TODO: write proper test
     println(eStep(data, mu, sigma, mix))
 end
@@ -41,4 +45,14 @@ end
 
     @test updateMix(estimatedNumberOfClusterDataPoints) == [0.5, 0.5]
     println(mStep(dataA, posteriors))
+end
+
+@testset "checkConvergence" begin
+    posteriorA = [[0.1, 0.9], [0.7, 0.2]]
+    updatedPosteriorA = [[0.4, 0.6], [0.8, 0.2]]
+    @test checkConvergence(posteriorA, updatedPosteriorA)
+
+    posteriorB = [[0.1, 0.9], [0.7, 0.2]]
+    updatedPosteriorB = [[0.6, 0.4], [0.8, 0.2]]
+    @test checkConvergence(posteriorB, updatedPosteriorB) == false
 end

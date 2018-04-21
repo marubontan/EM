@@ -2,13 +2,14 @@ using Distributions
 
 function EM(data, k)
     mu = [rand(Normal(0, 100), 2) for i in 1:3]
-    sigma = rand(Wishart(3, eye(2)), 3)
+    sigma = rand(Wishart(3, 1000 * eye(2)), 3)
     mixTemp = rand(3)
     mix = mixTemp / sum(mixTemp)
 
     posterior = eStep(data, mu, sigma, mix)
     while true
         mu, sigma, mix = mStep(data, posterior)
+        sigma = [adjustToSymmetricMatrix(sig) for sig in sigma]
         posteriorTemp = eStep(data, mu, sigma, mix)
         if isapprox(posterior, posteriorTemp)
             break
@@ -37,7 +38,7 @@ function getPosterior(data::Array, mu::Array, sigma::Array, mix::Float64)
 end
 
 function getPosteriorProbability(posteriors)
-    return posteriors / sum(posteriors)
+    return sum(posteriors) == 0 ? posteriors : posteriors / sum(posteriors)
 end
 
 function adjustToSymmetricMatrix(matrix)

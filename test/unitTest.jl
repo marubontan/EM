@@ -24,6 +24,7 @@ end
 @testset "mStep" begin
     dataA = [1.0 2.0; 100.0 100.0]
     dataB = [1.0 5.0; 1000.0 1000.0]
+    mu = [[1.1, 2.1], [100.1, 104.6]]
     posteriors = [[1.0, 0.0], [0.0, 1.0]]
     @test estimateNumberOfClusterDataPoints(posteriors) == [1.0, 1.0]
 

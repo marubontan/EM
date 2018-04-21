@@ -1,21 +1,31 @@
 using Distributions
 
+type EMResults
+    mu::Array
+    sigma::Array
+    mix::Array
+    posterior::Array
+    iterCount::Int
+end
+
 function EM(data, k)
     mu, sigma, mix = initializeParameters(data, k)
 
     posterior = eStep(data, mu, sigma, mix)
+    iterCount = 0
     while true
         mu, sigma, mix = mStep(data, posterior)
         # TODO: do proper experiment to check the case this needs
         sigma = [adjustToSymmetricMatrix(sig) for sig in sigma]
         posteriorTemp = eStep(data, mu, sigma, mix)
 
+        iterCount += 1
         if checkConvergence(posterior, posteriorTemp)
             break
         end
         posterior = posteriorTemp
     end
-    return mu, sigma, mix, posterior
+    return EMResults(mu, sigma, mix, posterior, iterCount)
 end
 
 function initializeParameters(data, k::Int)

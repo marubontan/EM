@@ -2,15 +2,19 @@ using Distributions
 
 function EM(data, k)
     mu = [rand(Normal(0, 100), 2) for i in 1:2]
+    # TODO: check wishart
     sigma = rand(Wishart(3, 1000 * eye(2)), 2)
     mixTemp = rand(2)
     mix = mixTemp / sum(mixTemp)
 
+    # TODO: think about the variable name
     posterior = eStep(data, mu, sigma, mix)
     while true
         mu, sigma, mix = mStep(data, posterior)
+        # TODO: do proper experiment to check the case this needs
         sigma = [adjustToSymmetricMatrix(sig) for sig in sigma]
         posteriorTemp = eStep(data, mu, sigma, mix)
+        # TODO: check isapprox itself
         if isapprox(posterior, posteriorTemp)
             break
         end
@@ -19,8 +23,8 @@ function EM(data, k)
     return mu, sigma, mix, posterior
 end
 
-# TODO: refactoring
 function eStep(data::Array, mu::Array, sigma::Array, mix::Array)
+    # TODO: think about the variable name
     posteriorArray = []
     for i in 1:size(data)[1]
         posteriors = Array{Float64}(length(mix))
@@ -33,10 +37,12 @@ function eStep(data::Array, mu::Array, sigma::Array, mix::Array)
     return posteriorArray
 end
 
+# TODO: think about the function name
 function getPosterior(data::Array, mu::Array, sigma::Array, mix::Float64)
     return mix * pdf(MvNormal(mu, sigma), data)
 end
 
+# TODO: think about the function name
 function getPosteriorProbability(posteriors)
     return sum(posteriors) == 0 ? posteriors : posteriors / sum(posteriors)
 end
@@ -63,6 +69,7 @@ function mStep(data, posteriors)
     return updatedMu, updatedSigma, updatedMix
 end
 
+# TODO: think about the function name
 function estimateNumberOfClusterDataPoints(posteriors::Array)
     clusterNum = length(posteriors[1])
     numberOfClusterDataPoints = zeros(clusterNum)

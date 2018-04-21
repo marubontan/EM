@@ -3,15 +3,14 @@ using Distributions
 function EM(data, k)
     mu, sigma, mix = initializeParameters(data, k)
 
-    # TODO: think about the variable name
     posterior = eStep(data, mu, sigma, mix)
     while true
         mu, sigma, mix = mStep(data, posterior)
         # TODO: do proper experiment to check the case this needs
         sigma = [adjustToSymmetricMatrix(sig) for sig in sigma]
         posteriorTemp = eStep(data, mu, sigma, mix)
-        # TODO: check isapprox itself
-        if isapprox(posterior, posteriorTemp)
+
+        if checkConvergence(posterior, posteriorTemp)
             break
         end
         posterior = posteriorTemp
@@ -43,25 +42,6 @@ function eStep(data::Array, mu::Array, sigma::Array, mix::Array)
     return posteriorArray
 end
 
-function calculatePosterior(data::Array, mu::Array, sigma::Array, prior::Float64)
-    return prior * pdf(MvNormal(mu, sigma), data)
-end
-
-function makeArrayRatio(posteriors)
-    return sum(posteriors) == 0 ? posteriors : posteriors / sum(posteriors)
-end
-
-function adjustToSymmetricMatrix(matrix)
-    for r in 1:size(matrix)[1]
-        for c in 1:size(matrix)[2]
-            if c + r - size(matrix)[1] > 0
-                matrix[r, c] = matrix[c, r]
-            end
-        end
-    end
-    return matrix
-end
-
 function mStep(data, posteriors)
     numberOfClusterDataPoints = estimateNumberOfClusterDataPoints(posteriors)
 
@@ -70,6 +50,20 @@ function mStep(data, posteriors)
     updatedMix = updateMix(numberOfClusterDataPoints)
 
     return updatedMu, updatedSigma, updatedMix
+end
+
+function checkConvergence(posterior, updatedPosterior)
+    hardLabel = [argMax(pos) for pos in posterior]
+    updatedHardLabel = [argMax(pos) for pos in updatedPosterior]
+    return hardLabel == updatedHardLabel
+end
+
+function calculatePosterior(data::Array, mu::Array, sigma::Array, prior::Float64)
+    return prior * pdf(MvNormal(mu, sigma), data)
+end
+
+function makeArrayRatio(posteriors)
+    return sum(posteriors) == 0 ? posteriors : posteriors / sum(posteriors)
 end
 
 function estimateNumberOfClusterDataPoints(posteriors::Array)
@@ -107,4 +101,19 @@ end
 
 function updateMix(numberOfClusterDataPoints)
     return numberOfClusterDataPoints / sum(numberOfClusterDataPoints)
+end
+
+function adjustToSymmetricMatrix(matrix)
+    for r in 1:size(matrix)[1]
+        for c in 1:size(matrix)[2]
+            if c + r - size(matrix)[1] > 0
+                matrix[r, c] = matrix[c, r]
+            end
+        end
+    end
+    return matrix
+end
+
+function argMax(array::Array)
+    return sortperm(array)[length(array)]
 end

@@ -21,8 +21,10 @@ mix = [0.3, 0.7]
     @test calculatePosterior(data[1, :], mu[1], sigma[1], mix[1]) == 0.3 * pdf(MvNormal([0.0, 0.0], [1 0; 0 1]), [1, 2])
     posteriors = [1, 2, 3, 4]
     @test makeArrayRatio(posteriors) == [0.1, 0.2, 0.3, 0.4]
-    # TODO: write proper test
-    println(eStep(data, mu, sigma, mix))
+
+    calculatedPosterior = eStep(data, mu, sigma, mix)
+    @test length(calculatedPosterior) == size(data)[1]
+    @test length(calculatedPosterior[1]) == length(mix)
 end
 
 @testset "mStep" begin
@@ -44,7 +46,13 @@ end
     (posteriors[1][2] * (dataB[1, :] - mu[2]) * (dataB[1, :] - mu[2])' + posteriors[2][2] * (dataB[2, :] - mu[2]) * (dataB[2, :] - mu[2])') / estimatedNumberOfClusterDataPoints[2]]
 
     @test updateMix(estimatedNumberOfClusterDataPoints) == [0.5, 0.5]
-    println(mStep(dataA, posteriors))
+    updatedMu, updatedSigma, updatedMix = mStep(dataA, posteriors)
+    @test isa(updatedMu, Array)
+    @test isa(updatedSigma, Array)
+    @test isa(updatedMix, Array)
+    @test length(updatedMu) == length(posteriors[1])
+    @test length(updatedSigma) == length(posteriors[1])
+    @test length(updatedMix) == length(posteriors[1])
 end
 
 @testset "checkConvergence" begin

@@ -20,11 +20,13 @@ function EM(data, k)
         sigma = [adjustToSymmetricMatrix(sig) for sig in sigma]
         posteriorTemp = eStep(data, mu, sigma, mix)
 
-        push!(logLikelihoods, calcLogLikelihood(data, mu, sigma, mix, posteriorTema))
+        push!(logLikelihoods, calcLogLikelihood(data, mu, sigma, mix, posteriorTemp))
 
         iterCount += 1
-        if isapprox(logLikelihoods[length(logLikelihoods)], logLikelihoods[length(logLikelihoods) - 1])
-            break
+        if iterCount >= 2
+            if isapprox(logLikelihoods[length(logLikelihoods)], logLikelihoods[length(logLikelihoods) - 1])
+                break
+            end
         end
         """
         if checkConvergence(posterior, posteriorTemp)
@@ -79,7 +81,15 @@ function calcLogLikelihood(data, mu, sigma, mix, posterior)
     logLikelihood = 0.0
     for i in 1:size(data)[1]
         for k in 1:length(mix)
-            logLikelihood += posterior[i][k] * (log(mix[k]) - (length(mu[1])/2) * log(2 * mix[k]) + (1/2) * log(1/det(sigma[i][k])) - (1/2) * (data[i] - mu[k])' * inv(sigma[k]) * (data[i] - mu[k]))
+            tempA =  posterior[i][k]
+            tempB = log(mix[k])
+            tempC = (length(mu[1])/2)
+            tempD = log(2 * mix[k])
+            tempE = (1/2) * log(1/det(sigma[k]))
+            tempF = (1/2) * (data[i] - mu[k])'
+            tempG = inv(sigma[k])
+            tempH = (data[i] - mu[k])
+            logLikelihood += posterior[i][k] * (log(mix[k]) - (length(mu[1])/2) * log(2 * mix[k]) + (1/2) * log(1/det(sigma[k])) - (1/2) * (data[i] - mu[k])' * inv(sigma[k]) * (data[i] - mu[k]))
         end
     end
     return logLikelihood

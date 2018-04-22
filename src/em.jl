@@ -68,6 +68,16 @@ function checkConvergence(posterior, updatedPosterior)
     return hardLabel == updatedHardLabel
 end
 
+function calcLogLikelihood(data, mu, sigma, mix, posterior)
+    logLikelihood = 0.0
+    for i in 1:size(data)[1]
+        for k in 1:length(mix)
+            logLikelihood += posterior[i][k] * (log(mix[k]) - (length(mu[1])/2) * log(2 * mix[k]) + (1/2) * log(1/det(sigma[i][k])) - (1/2) * (data[i] - mu[k])' * inv(sigma[k]) * (data[i] - mu[k]))
+        end
+    end
+    return logLikelihood
+end
+
 function calculatePosterior(data::Array, mu::Array, sigma::Array, prior::Float64)
     return prior * pdf(MvNormal(mu, sigma), data)
 end
@@ -127,3 +137,4 @@ end
 function argMax(array::Array)
     return sortperm(array)[length(array)]
 end
+

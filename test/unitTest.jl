@@ -3,10 +3,12 @@ using Distributions
 
 include("../src/em.jl")
 @testset "support function" begin
-    sigma = eye(2)
-    sigma[1,2] = 3
-
-    @test adjustToSymmetricMatrix(sigma) == [1 0;0 1]
+    sigmaA = eye(2)
+    sigmaA[1,2] = 3
+    @test adjustToSymmetricMatrix(sigmaA) == eye(2)
+    sigmaB = eye(5)
+    sigmaB[1,2] = 8
+    @test adjustToSymmetricMatrix(sigmaB) == eye(5)
 
 
     @test argMax([3, 2, 1]) == 1

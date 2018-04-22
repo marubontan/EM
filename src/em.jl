@@ -24,15 +24,10 @@ function EM(data, k)
 
         iterCount += 1
         if iterCount >= 2
-            if isapprox(logLikelihoods[length(logLikelihoods)], logLikelihoods[length(logLikelihoods) - 1])
+            if checkConvergence(logLikelihoods[length(logLikelihoods)-1], logLikelihoods[length(logLikelihoods)])
                 break
             end
         end
-        """
-        if checkConvergence(posterior, posteriorTemp)
-            break
-        end
-        """
         posterior = posteriorTemp
     end
     return EMResults(mu, sigma, mix, posterior, iterCount)
@@ -41,15 +36,13 @@ end
 function initializeParameters(data, k::Int)
     numberOfVariables = size(data)[2]
     mu = [rand(Normal(0, 100), numberOfVariables) for i in 1:k]
-    # TODO: check wishart
-    sigma = rand(Wishart(k+1, 10000 * eye(numberOfVariables)), k)
+    sigma = [10000000 * eye(numberOfVariables) for i in 1:k]
     mixTemp = rand(k)
     mix = mixTemp / sum(mixTemp)
     return mu, sigma, mix
 end
 
 function eStep(data::Array, mu::Array, sigma::Array, mix::Array)
-    # TODO: think about the variable name
     posteriorArray = []
     for i in 1:size(data)[1]
         posteriors = Array{Float64}(length(mix))
@@ -72,23 +65,13 @@ function mStep(data, posteriors)
 end
 
 function checkConvergence(posterior, updatedPosterior)
-    hardLabel = [argMax(pos) for pos in posterior]
-    updatedHardLabel = [argMax(pos) for pos in updatedPosterior]
-    return hardLabel == updatedHardLabel
+    return isapprox(posterior, updatedPosterior)
 end
 
 function calcLogLikelihood(data, mu, sigma, mix, posterior)
     logLikelihood = 0.0
     for i in 1:size(data)[1]
         for k in 1:length(mix)
-            tempA =  posterior[i][k]
-            tempB = log(mix[k])
-            tempC = (length(mu[1])/2)
-            tempD = log(2 * mix[k])
-            tempE = (1/2) * log(1/det(sigma[k]))
-            tempF = (1/2) * (data[i] - mu[k])'
-            tempG = inv(sigma[k])
-            tempH = (data[i] - mu[k])
             logLikelihood += posterior[i][k] * (log(mix[k]) - (length(mu[1])/2) * log(2 * mix[k]) + (1/2) * log(1/det(sigma[k])) - (1/2) * (data[i] - mu[k])' * inv(sigma[k]) * (data[i] - mu[k]))
         end
     end

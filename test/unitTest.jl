@@ -80,17 +80,9 @@ end
     @test_nowarn EM(dataD, 3)
 end
 
-"""
 @testset "checkConvergence" begin
-    posteriorA = [[0.1, 0.9], [0.7, 0.2]]
-    updatedPosteriorA = [[0.4, 0.6], [0.8, 0.2]]
-    @test checkConvergence(posteriorA, updatedPosteriorA)
-
-    posteriorB = [[0.1, 0.9], [0.7, 0.2]]
-    updatedPosteriorB = [[0.6, 0.4], [0.8, 0.2]]
-    @test checkConvergence(posteriorB, updatedPosteriorB) == false
+    @test checkConvergence(1, 1)
 end
-"""
 
 @testset "logLikelihood" begin
     dataA = [1.0 1.0; 10.0 10.0]
@@ -98,6 +90,6 @@ end
     sigmaA = [[1.0 0.0; 0.0 1.0], [2.0 0.0; 0.0 2.0]]
     mixA = [0.3, 0.7]
     posteriorA = [[0.8, 0.2], [0.2, 0.8]]
-    calcLogLikelihood(dataA, muA, sigmaA, mixA, posteriorA)
+    @test_nowarn calcLogLikelihood(dataA, muA, sigmaA, mixA, posteriorA)
 end
 

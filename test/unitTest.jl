@@ -55,6 +55,29 @@ end
     @test length(updatedMix) == length(posteriors[1])
 end
 
+@testset "EM" begin
+    groupOneA = rand(MvNormal([1,1], eye(2)), 100)
+    groupTwoA = rand(MvNormal([10,10], eye(2)), 100)
+    dataA = hcat(groupOneA, groupTwoA)'
+    @test_nowarn EM(dataA, 2)
+
+    groupOneB = rand(MvNormal([1,1], eye(2)), 100)
+    groupTwoB = rand(MvNormal([1000,1000], eye(2)), 1000)
+    dataB = hcat(groupOneB, groupTwoB)'
+    @test_nowarn EM(dataB, 2)
+
+    groupOneC = rand(MvNormal([1,1,1], eye(3)), 100)
+    groupTwoC = rand(MvNormal([1000,1000,10], eye(3)), 1000)
+    dataC = hcat(groupOneC, groupTwoC)'
+    @test_nowarn EM(dataC, 2)
+
+    groupOneD = rand(MvNormal([1,1,1,4], eye(4)), 100)
+    groupTwoD = rand(MvNormal([1000,1000,10,40], eye(4)), 1000)
+    groupThreeD = rand(MvNormal([-1000,-1000,10,50], eye(4)), 1000)
+    dataD = hcat(groupOneD, groupTwoD, groupThreeD)'
+    @test_nowarn EM(dataD, 3)
+end
+
 @testset "checkConvergence" begin
     posteriorA = [[0.1, 0.9], [0.7, 0.2]]
     updatedPosteriorA = [[0.4, 0.6], [0.8, 0.2]]
@@ -64,3 +87,4 @@ end
     updatedPosteriorB = [[0.6, 0.4], [0.8, 0.2]]
     @test checkConvergence(posteriorB, updatedPosteriorB) == false
 end
+

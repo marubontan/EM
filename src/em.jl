@@ -40,7 +40,7 @@ function initializeParameters(data, k::Int)
     numberOfVariables = size(data)[2]
     mu = [rand(Normal(0, 100), numberOfVariables) for i in 1:k]
     # TODO: check wishart
-    sigma = rand(Wishart(3, 1000 * eye(numberOfVariables)), k)
+    sigma = rand(Wishart(k+1, 10000 * eye(numberOfVariables)), k)
     mixTemp = rand(k)
     mix = mixTemp / sum(mixTemp)
     return mu, sigma, mix
@@ -52,8 +52,7 @@ function eStep(data::Array, mu::Array, sigma::Array, mix::Array)
     for i in 1:size(data)[1]
         posteriors = Array{Float64}(length(mix))
         for j in 1:length(mix)
-            posterior = calculatePosterior(data[i,:], mu[j], sigma[j], mix[j])
-            posteriors[j] = posterior
+            posteriors[j] = calculatePosterior(data[i,:], mu[j], sigma[j], mix[j])
         end
         push!(posteriorArray, makeArrayRatio(posteriors))
     end
@@ -134,7 +133,7 @@ end
 function adjustToSymmetricMatrix(matrix)
     for r in 1:size(matrix)[1]
         for c in 1:size(matrix)[2]
-            if c + r - size(matrix)[1] > 0
+            if c > r
                 matrix[r, c] = matrix[c, r]
             end
         end

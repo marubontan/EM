@@ -47,6 +47,7 @@ end
     println(mStep(dataA, posteriors))
 end
 
+"""
 @testset "checkConvergence" begin
     posteriorA = [[0.1, 0.9], [0.7, 0.2]]
     updatedPosteriorA = [[0.4, 0.6], [0.8, 0.2]]
@@ -56,6 +57,7 @@ end
     updatedPosteriorB = [[0.6, 0.4], [0.8, 0.2]]
     @test checkConvergence(posteriorB, updatedPosteriorB) == false
 end
+"""
 
 @testset "logLikelihood" begin
     dataA = [1.0 1.0; 10.0 10.0]

@@ -12,6 +12,7 @@ function EM(data, k)
     mu, sigma, mix = initializeParameters(data, k)
 
     posterior = eStep(data, mu, sigma, mix)
+    logLikelihoods = []
     iterCount = 0
     while true
         mu, sigma, mix = mStep(data, posterior)
@@ -19,10 +20,17 @@ function EM(data, k)
         sigma = [adjustToSymmetricMatrix(sig) for sig in sigma]
         posteriorTemp = eStep(data, mu, sigma, mix)
 
+        push!(logLikelihoods, calcLogLikelihood(data, mu, sigma, mix, posteriorTema))
+
         iterCount += 1
+        if isapprox(logLikelihoods[length(logLikelihoods)], logLikelihoods[length(logLikelihoods) - 1])
+            break
+        end
+        """
         if checkConvergence(posterior, posteriorTemp)
             break
         end
+        """
         posterior = posteriorTemp
     end
     return EMResults(mu, sigma, mix, posterior, iterCount)

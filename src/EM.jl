@@ -5,6 +5,7 @@ type EMResults
     sigma::Array
     mix::Array
     posterior::Array
+    logLikeLihoods::Array
     iterCount::Int
 end
 
@@ -12,6 +13,10 @@ function EM(data, k)
     mu, sigma, mix = initializeParameters(data, k)
 
     posterior = eStep(data, mu, sigma, mix)
+    muArray = []
+    sigmaArray = []
+    mixArray = []
+    posteriorArray = []
     logLikelihoods = []
     iterCount = 0
     while true
@@ -21,22 +26,25 @@ function EM(data, k)
         posteriorTemp = eStep(data, mu, sigma, mix)
 
         push!(logLikelihoods, calcLogLikelihood(data, mu, sigma, mix, posteriorTemp))
-
+        push!(muArray, mu)
+        push!(sigmaArray, sigma)
+        push!(mixArray, mix)
+        push!(posteriorArray, posteriorTemp)
         iterCount += 1
         if iterCount >= 2
-            if checkConvergence(logLikelihoods[length(logLikelihoods)-1], logLikelihoods[length(logLikelihoods)])
+            if checkConvergence(logLikelihoods[end-1], logLikelihoods[end])
                 break
             end
         end
         posterior = posteriorTemp
     end
-    return EMResults(mu, sigma, mix, posterior, iterCount)
+    return EMResults(muArray, sigmaArray, mixArray, posteriorArray, logLikelihoods, iterCount)
 end
 
 function initializeParameters(data, k::Int)
     numberOfVariables = size(data)[2]
     mu = [rand(Normal(0, 100), numberOfVariables) for i in 1:k]
-    sigma = [1000000 * eye(numberOfVariables) for i in 1:k]
+    sigma = [10000 * eye(numberOfVariables) for i in 1:k]
     mixTemp = rand(k)
     mix = mixTemp / sum(mixTemp)
     return mu, sigma, mix

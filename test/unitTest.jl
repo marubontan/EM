@@ -1,7 +1,7 @@
 using Base.Test
 using Distributions
 
-include("../src/em.jl")
+include("../src/EM.jl")
 @testset "support function" begin
     sigmaA = eye(2)
     sigmaA[1,2] = 3

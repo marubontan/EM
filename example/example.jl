@@ -1,4 +1,4 @@
-include("../src/em.jl")
+include("../src/EM.jl")
 using Distributions
 
 groupOne = rand(MvNormal([1,1], eye(2)), 100)

@@ -1,11 +1,11 @@
 using Distributions
 
-type EMResults
-    mu::Array
-    sigma::Array
-    mix::Array
-    posterior::Array
-    logLikeLihoods::Array
+struct EMResults{T<:Array}
+    mu::T
+    sigma::T
+    mix::T
+    posterior::T
+    logLikeLihoods::T
     iterCount::Int
 end
 

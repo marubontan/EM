@@ -43,8 +43,8 @@ end
 
 function initializeParameters(data, k::Int)
     numberOfVariables = size(data)[2]
-    mu = [rand(Normal(0, 100), numberOfVariables) for i in 1:k]
-    sigma = [10000 * eye(numberOfVariables) for i in 1:k]
+    mu = [rand(Normal(0, 100), numberOfVariables) for _ in 1:k]
+    sigma = [10000 * eye(numberOfVariables) for _ in 1:k]
     mixTemp = rand(k)
     mix = mixTemp / sum(mixTemp)
     return mu, sigma, mix

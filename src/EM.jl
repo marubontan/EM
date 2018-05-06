@@ -15,6 +15,7 @@ struct Initialization
     mix::Array
 end
 
+# TODO: there are two types of bugs. One, the sigma becomes non-positive definite. Two, the whole posteriors become zero and parameters become NaN.
 function EM(data, k; initialization=nothing)
 
     if initialization == nothing

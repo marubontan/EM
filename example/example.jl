@@ -7,5 +7,5 @@ groupThree = rand(MvNormal([100,100], eye(2)), 100)
 
 data = hcat(groupOne, groupTwo, groupThree)'
 
-println(EM(data, 3))
+#println(EM(data, 3))
 

@@ -36,7 +36,14 @@ function EM(data, k; initialization=nothing)
         mu, sigma, mix = mStep(data, posterior)
         # TODO: do proper experiment to check the case this needs
         sigma = [adjustToSymmetricMatrix(sig) for sig in sigma]
-        posteriorTemp = eStep(data, mu, sigma, mix)
+
+        posteriorTemp = [zeros(length(mix)) for _ in 1:size(data)[1]]
+        try
+            posteriorTemp = eStep(data, mu, sigma, mix)
+        catch e
+            println(posterior)
+            error(e)
+        end
 
         push!(logLikelihoods, calcLogLikelihood(data, mu, sigma, mix, posteriorTemp))
         push!(muArray, mu)
@@ -100,7 +107,16 @@ function calcLogLikelihood(data, mu, sigma, mix, posterior)
 end
 
 function calculatePosterior(data::Array, mu::Array, sigma::Array, prior::Float64)
-    return prior * pdf(MvNormal(mu, sigma), data)
+    posterior = 0.0
+    try
+        posterior = prior * pdf(MvNormal(mu, sigma), data)
+    catch e
+        println("mu:" * string(mu))
+        println("sigma:" * string(sigma))
+        error(e)
+    end
+
+    return posterior
 end
 
 function makeArrayRatio(posteriors)

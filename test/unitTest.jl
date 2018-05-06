@@ -100,6 +100,7 @@ end
 end
 
 @testset "MNIST test" begin
+    srand(1234)
     train_x, train_y = MNIST.traindata()
 
     sub_x = zeros(1000, 784)

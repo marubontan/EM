@@ -9,8 +9,21 @@ struct EMResults{T<:Array}
     iterCount::Int
 end
 
-function EM(data, k)
-    mu, sigma, mix = initializeParameters(data, k)
+struct Initialization
+    mu::Array
+    sigma::Array
+    mix::Array
+end
+
+function EM(data, k; initialization=nothing)
+
+    if initialization == nothing
+        mu, sigma, mix = initializeParameters(data, k)
+    elseif typeof(initialization) == Initialization
+        mu, sigma, mix = (initialization.mu, initialization.sigma, initialization.mix)
+    else
+        error("The argument, initialization, is not valid.")
+    end
 
     posterior = eStep(data, mu, sigma, mix)
     muArray = []

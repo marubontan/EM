@@ -9,17 +9,22 @@ struct EMResults{T<:Array}
     iterCount::Int
 end
 
+
 struct Initialization
     mu::Array
     sigma::Array
     mix::Array
 end
 
-# TODO: there are two types of bugs. One, the sigma becomes non-positive definite. Two, the whole posteriors become zero and parameters become NaN.
-function EM(data, k; initialization=nothing)
 
+# TODO: there are two types of bugs. One, the sigma becomes non-positive definite. Two, the whole posteriors become zero and parameters become NaN.
+function EM(data::Array{Float64, 2},
+            k::Int;
+            initialization=nothing)
+
+    scale = maximum(data) - minimum(data)
     if initialization == nothing
-        mu, sigma, mix = initializeParameters(data, k)
+        mu, sigma, mix = initializeParameters(data, scale, k)
     elseif typeof(initialization) == Initialization
         mu, sigma, mix = (initialization.mu, initialization.sigma, initialization.mix)
     else
@@ -34,8 +39,7 @@ function EM(data, k; initialization=nothing)
     logLikelihoods = []
     iterCount = 0
     while true
-        mu, sigma, mix = mStep(data, posterior)
-        # TODO: do proper experiment to check the case this needs
+        mu, sigma, mix = mStep(data, scale, posterior)
         sigma = [adjustToSymmetricMatrix(sig) for sig in sigma]
         posteriorTemp = eStep(data, mu, sigma, mix)
 
@@ -52,45 +56,74 @@ function EM(data, k; initialization=nothing)
         end
         posterior = posteriorTemp
     end
-    return EMResults(muArray, sigmaArray, mixArray, posteriorArray, logLikelihoods, iterCount)
+    return EMResults(muArray,
+                     sigmaArray,
+                     mixArray,
+                     posteriorArray,
+                     logLikelihoods,
+                     iterCount)
 end
 
-function initializeParameters(data, k::Int)
+
+function initializeParameters(data::Array{Float64, 2},
+                              scale::Float64,
+                              k::Int)
+
     numberOfVariables = size(data)[2]
+
     mu = [rand(Normal(0, 100), numberOfVariables) for _ in 1:k]
-    sigma = [10000 * eye(numberOfVariables) for _ in 1:k]
+    sigma = [(scale * 100) * eye(numberOfVariables) for _ in 1:k]
     mixTemp = rand(k)
     mix = mixTemp / sum(mixTemp)
+
     return mu, sigma, mix
 end
 
-function eStep(data::Array, mu::Array, sigma::Array, mix::Array)
+
+function eStep(data::Array,
+               mu::Array,
+               sigma::Array,
+               mix::Array)
+
     posteriorArray = []
     for i in 1:size(data)[1]
         posteriors = Array{Float64}(length(mix))
         for j in 1:length(mix)
-            posteriors[j] = calculatePosterior(data[i,:], mu[j], sigma[j], mix[j])
+            posteriors[j] = calculatePosterior(data[i,:],
+                                               mu[j],
+                                               sigma[j],
+                                               mix[j])
         end
         push!(posteriorArray, makeArrayRatio(posteriors))
     end
     return posteriorArray
 end
 
-function mStep(data, posteriors)
+
+function mStep(data, scale, posteriors)
+
     numberOfClusterDataPoints = estimateNumberOfClusterDataPoints(posteriors)
 
     updatedMu = updateMu(posteriors, data, numberOfClusterDataPoints)
-    updatedSigma = updateSigma(posteriors, data, numberOfClusterDataPoints,updatedMu)
+    updatedSigma = updateSigma(posteriors,
+                               data,
+                               scale,
+                               numberOfClusterDataPoints,
+                               updatedMu)
     updatedMix = updateMix(numberOfClusterDataPoints)
 
     return updatedMu, updatedSigma, updatedMix
 end
 
+
 function checkConvergence(posterior, updatedPosterior)
+
     return isapprox(posterior, updatedPosterior)
 end
 
+
 function calcLogLikelihood(data, mu, sigma, mix, posterior)
+
     logLikelihood = 0.0
     for i in 1:size(data)[1]
         for k in 1:length(mix)
@@ -100,15 +133,21 @@ function calcLogLikelihood(data, mu, sigma, mix, posterior)
     return logLikelihood
 end
 
+
 function calculatePosterior(data::Array, mu::Array, sigma::Array, prior::Float64)
+
     return prior * pdf(MvNormal(mu, sigma), data)
 end
 
+
 function makeArrayRatio(posteriors)
+
     return sum(posteriors) == 0 ? posteriors : posteriors / sum(posteriors)
 end
 
+
 function estimateNumberOfClusterDataPoints(posteriors::Array)
+
     clusterNum = length(posteriors[1])
     numberOfClusterDataPoints = zeros(clusterNum)
     for posterior in posteriors
@@ -117,7 +156,9 @@ function estimateNumberOfClusterDataPoints(posteriors::Array)
     return numberOfClusterDataPoints
 end
 
+
 function updateMu(posteriors, data, numberOfClusterDataPoints)
+
     updatedMuArray = []
     for k in 1:length(numberOfClusterDataPoints)
         muSum = 0
@@ -129,23 +170,45 @@ function updateMu(posteriors, data, numberOfClusterDataPoints)
     return updatedMuArray
 end
 
-function updateSigma(posteriors, data, numberOfClusterDataPoints, mu)
+
+function updateSigma(posteriors,
+                     data,
+                     scale,
+                     numberOfClusterDataPoints,
+                     mu)
+
     updatedSigmaArray = []
     for k in 1:length(numberOfClusterDataPoints)
         sigmaSum = 0
         for i in 1:size(data)[1]
             sigmaSum += posteriors[i][k] * (data[i, :] - mu[k]) * (data[i, :] - mu[k])'
         end
-        push!(updatedSigmaArray, sigmaSum/numberOfClusterDataPoints[k])
+        updatedSigma = sigmaSum/numberOfClusterDataPoints[k]
+        if checkPositiveDefinite(updatedSigma) == false
+            # TODO: this way of assignment is just for now
+            updatedSigma = (scale * scale) * eye(size(data)[2])
+        end
+        push!(updatedSigmaArray, updatedSigma)
     end
     return updatedSigmaArray
 end
 
+
+function checkPositiveDefinite(matrix::Array{Float64, 2})
+
+    positiveDefinite = length(find(eigvals(matrix)) .<= 0) == 0 ? true : false
+    return positiveDefinite
+end
+
+
 function updateMix(numberOfClusterDataPoints)
+
     return numberOfClusterDataPoints / sum(numberOfClusterDataPoints)
 end
 
+
 function adjustToSymmetricMatrix(matrix)
+
     for r in 1:size(matrix)[1]
         for c in 1:size(matrix)[2]
             if c > r
@@ -154,9 +217,5 @@ function adjustToSymmetricMatrix(matrix)
         end
     end
     return matrix
-end
-
-function argMax(array::Array)
-    return sortperm(array)[length(array)]
 end
 

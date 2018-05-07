@@ -10,9 +10,6 @@ include("../src/EM.jl")
     sigmaB[1,2] = 8
     @test adjustToSymmetricMatrix(sigmaB) == eye(5)
 
-
-    @test argMax([3, 2, 1]) == 1
-    @test argMax([5, 3, 6]) == 3
 end
 
 data = [1.0 2.0; 2.0 1.0; 100.0 100.0; 90.0 110.0]
@@ -42,22 +39,22 @@ end
     @test updateMu(posteriors, dataB, estimatedNumberOfClusterDataPoints) == [(posteriors[1][1] * dataB[1, :] + posteriors[2][1] * dataB[2, :]) / estimatedNumberOfClusterDataPoints[1],
     (posteriors[1][2] * dataB[1, :] + posteriors[2][2] * dataB[2, :]) / estimatedNumberOfClusterDataPoints[2]]
 
-    @test updateSigma(posteriors, dataA, estimatedNumberOfClusterDataPoints, mu) == [(posteriors[1][1] * (dataA[1, :] - mu[1]) * (dataA[1, :] - mu[1])' + posteriors[2][1] * (dataA[2, :] - mu[1]) * (dataA[2, :] - mu[1])') / estimatedNumberOfClusterDataPoints[1],
-    (posteriors[1][2] * (dataA[1, :] - mu[2]) * (dataA[1, :] - mu[2])' + posteriors[2][2] * (dataA[2, :] - mu[2]) * (dataA[2, :] - mu[2])') / estimatedNumberOfClusterDataPoints[2]]
-    @test updateSigma(posteriors, dataB, estimatedNumberOfClusterDataPoints, mu) == [(posteriors[1][1] * (dataB[1, :] - mu[1]) * (dataB[1, :] - mu[1])' + posteriors[2][1] * (dataB[2, :] - mu[1]) * (dataB[2, :] - mu[1])') / estimatedNumberOfClusterDataPoints[1],
-    (posteriors[1][2] * (dataB[1, :] - mu[2]) * (dataB[1, :] - mu[2])' + posteriors[2][2] * (dataB[2, :] - mu[2]) * (dataB[2, :] - mu[2])') / estimatedNumberOfClusterDataPoints[2]]
 
     @test updateMix(estimatedNumberOfClusterDataPoints) == [0.5, 0.5]
-    updatedMu, updatedSigma, updatedMix = mStep(dataA, posteriors)
+    scaleA = maximum(dataA) - minimum(dataA)
+    updatedMu, updatedSigma, updatedMix = mStep(dataA, scaleA, posteriors)
     @test isa(updatedMu, Array)
     @test isa(updatedSigma, Array)
     @test isa(updatedMix, Array)
     @test length(updatedMu) == length(posteriors[1])
     @test length(updatedSigma) == length(posteriors[1])
     @test length(updatedMix) == length(posteriors[1])
+
+    @test checkPositiveDefinite([0.235667 -0.244005 0.672253 0.209954; -0.244005 0.268033 -0.716259 -0.212099; 0.672253 -0.716259 2.01277 0.626255; 0.209954 -0.212099 0.626255 0.206005]) == false
 end
 
 @testset "EM" begin
+    srand(1234)
     groupOneA = rand(MvNormal([1,1], eye(2)), 100)
     groupTwoA = rand(MvNormal([10,10], eye(2)), 100)
     dataA = hcat(groupOneA, groupTwoA)'

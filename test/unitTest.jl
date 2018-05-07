@@ -1,5 +1,7 @@
 using Base.Test
 using Distributions
+using RDatasets
+using MLDatasets
 
 include("../src/EM.jl")
 @testset "support function" begin
@@ -75,6 +77,35 @@ end
     groupThreeD = rand(MvNormal([-1000,-1000,10,50], eye(4)), 1000)
     dataD = hcat(groupOneD, groupTwoD, groupThreeD)'
     @test_nowarn EM(dataD, 3)
+end
+
+function dataFrame2Matrix(data::DataFrame)
+    r,c = size(data)
+    matrix = zeros(r, c)
+    for i in 1:r
+        matrix[i, :] = vec(Array(data[i, :]))
+    end
+    return matrix
+end
+
+@testset "iris test" begin
+    iris = dataset("datasets", "iris")
+    irisMatrix = dataFrame2Matrix(iris[:, [:SepalLength, :SepalWidth, :PetalLength, :PetalWidth]])
+
+    srand(1234)
+    @test_nowarn emIris = EM(irisMatrix, 3)
+end
+
+@testset "MNIST test" begin
+    srand(1234)
+    train_x, train_y = MNIST.traindata()
+
+    sub_x = zeros(1000, 784)
+    for i in 1:1000
+        sub_x[i, :] = vec(train_x[:,:,i])
+    end
+
+    @test_nowarn EM(sub_x, 3)
 end
 
 @testset "checkConvergence" begin

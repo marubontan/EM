@@ -4,10 +4,10 @@ include("../src/EM.jl")
 
 @testset "support function" begin
     sigmaA = eye(2)
-    sigmaA[1,2] = 3
+    sigmaA[1,2] = 3.0
     @test adjustToSymmetricMatrix(sigmaA) == eye(2)
     sigmaB = eye(5)
-    sigmaB[1,2] = 8
+    sigmaB[1,2] = 8.0
     @test adjustToSymmetricMatrix(sigmaB) == eye(5)
 
 end
@@ -18,7 +18,7 @@ sigma = [[1.0 0.0; 0.0 1.0], [2.0 0.0; 0.0 2.0]]
 mix = [0.3, 0.7]
 @testset "eStep" begin
     @test calculatePosterior(data[1, :], mu[1], sigma[1], mix[1]) == 0.3 * pdf(MvNormal([0.0, 0.0], [1 0; 0 1]), [1, 2])
-    posteriors = [1, 2, 3, 4]
+    posteriors = [1.0, 2.0, 3.0, 4.0]
     @test makeArrayRatio(posteriors) == [0.1, 0.2, 0.3, 0.4]
 
     calculatedPosterior = eStep(data, mu, sigma, mix)

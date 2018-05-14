@@ -35,7 +35,8 @@ function EM(data, k; initialization=nothing)
     posteriorArray = []
     logLikelihoods = []
     iterCount = 0
-    while iterCount >= 2 && !checkConvergence(logLikelihoods[end-1], logLikelihoods[end])
+    converged = false
+    while !converged
 
         mu, sigma, mix = mStep(data, posterior)
         # TODO: do proper experiment to check the case this needs
@@ -47,8 +48,12 @@ function EM(data, k; initialization=nothing)
         push!(sigmaArray, sigma)
         push!(mixArray, mix)
         push!(posteriorArray, posteriorTemp)
-
         iterCount += 1
+        if iterCount >= 2
+            if checkConvergence(logLikelihoods[end-1], logLikelihoods[end])
+                converged = true
+            end
+        end
         posterior = posteriorTemp
     end
     return EMResults(muArray, sigmaArray, mixArray, posteriorArray, logLikelihoods, iterCount)

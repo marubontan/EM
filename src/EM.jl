@@ -9,11 +9,13 @@ struct EMResults{T<:Array}
     iterCount::Int
 end
 
+
 struct Initialization
     mu::Array
     sigma::Array
     mix::Array
 end
+
 
 # TODO: there are two types of bugs. One, the sigma becomes non-positive definite. Two, the whole posteriors become zero and parameters become NaN.
 function EM(data, k; initialization=nothing)
@@ -33,7 +35,8 @@ function EM(data, k; initialization=nothing)
     posteriorArray = []
     logLikelihoods = []
     iterCount = 0
-    while true
+    while iterCount >= 2 && !checkConvergence(logLikelihoods[end-1], logLikelihoods[end])
+
         mu, sigma, mix = mStep(data, posterior)
         # TODO: do proper experiment to check the case this needs
         sigma = [adjustToSymmetricMatrix(sig) for sig in sigma]
@@ -44,12 +47,8 @@ function EM(data, k; initialization=nothing)
         push!(sigmaArray, sigma)
         push!(mixArray, mix)
         push!(posteriorArray, posteriorTemp)
+
         iterCount += 1
-        if iterCount >= 2
-            if checkConvergence(logLikelihoods[end-1], logLikelihoods[end])
-                break
-            end
-        end
         posterior = posteriorTemp
     end
     return EMResults(muArray, sigmaArray, mixArray, posteriorArray, logLikelihoods, iterCount)
@@ -155,8 +154,3 @@ function adjustToSymmetricMatrix(matrix)
     end
     return matrix
 end
-
-function argMax(array::Array)
-    return sortperm(array)[length(array)]
-end
-

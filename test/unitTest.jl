@@ -1,7 +1,7 @@
 using Base.Test
 using Distributions
-
 include("../src/EM.jl")
+
 @testset "support function" begin
     sigmaA = eye(2)
     sigmaA[1,2] = 3
@@ -10,9 +10,6 @@ include("../src/EM.jl")
     sigmaB[1,2] = 8
     @test adjustToSymmetricMatrix(sigmaB) == eye(5)
 
-
-    @test argMax([3, 2, 1]) == 1
-    @test argMax([5, 3, 6]) == 3
 end
 
 data = [1.0 2.0; 2.0 1.0; 100.0 100.0; 90.0 110.0]
@@ -92,4 +89,3 @@ end
     posteriorA = [[0.8, 0.2], [0.2, 0.8]]
     @test_nowarn calcLogLikelihood(dataA, muA, sigmaA, mixA, posteriorA)
 end
-

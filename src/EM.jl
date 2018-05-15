@@ -49,7 +49,7 @@ function EM(data::Array{Float64, 2}, k::Int; initialization=nothing)
     mixArray = []
     posteriorArray = []
     logLikelihoods = []
-    iterCount = 0
+    iterCount = zero(1)
     converged = false
     while !converged
 
@@ -128,7 +128,7 @@ end
 
 function calcLogLikelihood(data, mu, sigma, mix, posterior)
 
-    logLikelihood = 0.0
+    logLikelihood = zero(Float64)
     for i in 1:size(data)[1]
         for k in 1:length(mix)
             logLikelihood += posterior[i][k] * (log(mix[k]) - (length(mu[1])/2) * log(2 * mix[k]) + (1/2) * log(1/det(sigma[k])) - (1/2) * (data[i] - mu[k])' * inv(sigma[k]) * (data[i] - mu[k]))
@@ -173,7 +173,7 @@ function updateMu(posteriors::Array{Array{Float64, 1}},
 
     updatedMuArray = Array{Array{Float64, 1}}(numberOfCluster)
     for cluster in 1:numberOfCluster
-        muSum = 0
+        muSum = zero(Float64)
         for dataIndex in 1:size(data)[1]
             muSum += posteriors[dataIndex][cluster] * data[dataIndex, :]
         end
@@ -184,17 +184,17 @@ end
 
 
 function updateSigma(posteriors::Array{Array{Float64, 1}},
+                     data::Array{Float64, 2},
+                     numberOfClusterDataPoints::Array{Float64},
+                     mu::Array{Array{Float64, 1}})
 
-    data::Array{Float64, 2},
-    numberOfClusterDataPoints::Array{Float64},
-    mu::Array{Array{Float64, 1}})
-
+    rowSize, colSize = size(data)
     numberOfCluster = length(numberOfClusterDataPoints)
 
     updatedSigmaArray = Array{Array{Float64, 2}}(numberOfCluster)
     for cluster in 1:numberOfCluster
-        sigmaSum = 0
-        for dataIndex in 1:size(data)[1]
+        sigmaSum = zero(rand(colSize, colSize))
+        for dataIndex in 1:rowSize
             sigmaSum += posteriors[dataIndex][cluster] * (data[dataIndex, :] - mu[cluster]) * (data[dataIndex, :] - mu[cluster])'
         end
         updatedSigmaArray[cluster] = sigmaSum/numberOfClusterDataPoints[cluster]

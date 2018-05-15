@@ -1,26 +1,43 @@
 using Distributions
 
-struct EMResults{T<:Array}
-    mu::T
-    sigma::T
-    mix::T
-    posterior::T
-    logLikeLihoods::T
+struct EMResults
+    mu::Array{Array{Array{Float64, 1}}}
+    sigma::Array{Array{Array{Float64, 2}}}
+    mix::Array{Array{Float64, 1}}
+    posterior::Array{Array{Array{Float64, 1}}}
+    logLikeLihoods::Array{Float64}
     iterCount::Int
 end
 
+
 struct Initialization
-    mu::Array
-    sigma::Array
-    mix::Array
+    mu::Array{Array{Float64, 1}}
+    sigma::Array{Array{Float64, 2}}
+    mix::Array{Float64, 1}
 end
 
+
 # TODO: there are two types of bugs. One, the sigma becomes non-positive definite. Two, the whole posteriors become zero and parameters become NaN.
-function EM(data, k; initialization=nothing)
+function EM(data::Array{Float64, 2}, k::Int; initialization=nothing)
+
+    rowSize, colSize = size(data)
+
+    @assert 2 <= k < rowSize
 
     if initialization == nothing
+
         mu, sigma, mix = initializeParameters(data, k)
     elseif typeof(initialization) == Initialization
+
+        @assert length(initialization.mu) == k
+        @assert length(initialization.mu[1]) == colSize
+
+        @assert length(initialization.sigma) == k
+        @assert size(initialization.sigma[1]) == (colSize, colSize)
+
+        @assert length(initialization.mix) == k
+        @assert length(initialization.mu[1]) == colSize
+
         mu, sigma, mix = (initialization.mu, initialization.sigma, initialization.mix)
     else
         error("The argument, initialization, is not valid.")
@@ -32,8 +49,10 @@ function EM(data, k; initialization=nothing)
     mixArray = []
     posteriorArray = []
     logLikelihoods = []
-    iterCount = 0
-    while true
+    iterCount = zero(1)
+    converged = false
+    while !converged
+
         mu, sigma, mix = mStep(data, posterior)
         # TODO: do proper experiment to check the case this needs
         sigma = [adjustToSymmetricMatrix(sig) for sig in sigma]
@@ -47,7 +66,7 @@ function EM(data, k; initialization=nothing)
         iterCount += 1
         if iterCount >= 2
             if checkConvergence(logLikelihoods[end-1], logLikelihoods[end])
-                break
+                converged = true
             end
         end
         posterior = posteriorTemp
@@ -55,7 +74,9 @@ function EM(data, k; initialization=nothing)
     return EMResults(muArray, sigmaArray, mixArray, posteriorArray, logLikelihoods, iterCount)
 end
 
+
 function initializeParameters(data, k::Int)
+
     numberOfVariables = size(data)[2]
     mu = [rand(Normal(0, 100), numberOfVariables) for _ in 1:k]
     sigma = [10000 * eye(numberOfVariables) for _ in 1:k]
@@ -64,19 +85,31 @@ function initializeParameters(data, k::Int)
     return mu, sigma, mix
 end
 
-function eStep(data::Array, mu::Array, sigma::Array, mix::Array)
-    posteriorArray = []
-    for i in 1:size(data)[1]
+
+function eStep(data::Array{Float64, 2},
+               mu::Array{Array{Float64, 1}},
+               sigma::Array{Array{Float64, 2}},
+               mix::Array{Float64, 1})
+
+    numberOfDataPoint = size(data)[1]
+
+    posteriorArray = Array{Array{Float64, 1}}(numberOfDataPoint)
+    for dataIndex in 1:numberOfDataPoint
         posteriors = Array{Float64}(length(mix))
         for j in 1:length(mix)
-            posteriors[j] = calculatePosterior(data[i,:], mu[j], sigma[j], mix[j])
+            posteriors[j] = calculatePosterior(data[dataIndex,:],
+                                               mu[j],
+                                               sigma[j],
+                                               mix[j])
         end
-        push!(posteriorArray, makeArrayRatio(posteriors))
+        posteriorArray[dataIndex] = makeArrayRatio(posteriors)
     end
     return posteriorArray
 end
 
+
 function mStep(data, posteriors)
+
     numberOfClusterDataPoints = estimateNumberOfClusterDataPoints(posteriors)
 
     updatedMu = updateMu(posteriors, data, numberOfClusterDataPoints)
@@ -86,12 +119,16 @@ function mStep(data, posteriors)
     return updatedMu, updatedSigma, updatedMix
 end
 
+
 function checkConvergence(posterior, updatedPosterior)
+
     return isapprox(posterior, updatedPosterior)
 end
 
+
 function calcLogLikelihood(data, mu, sigma, mix, posterior)
-    logLikelihood = 0.0
+
+    logLikelihood = zero(Float64)
     for i in 1:size(data)[1]
         for k in 1:length(mix)
             logLikelihood += posterior[i][k] * (log(mix[k]) - (length(mu[1])/2) * log(2 * mix[k]) + (1/2) * log(1/det(sigma[k])) - (1/2) * (data[i] - mu[k])' * inv(sigma[k]) * (data[i] - mu[k]))
@@ -100,63 +137,90 @@ function calcLogLikelihood(data, mu, sigma, mix, posterior)
     return logLikelihood
 end
 
-function calculatePosterior(data::Array, mu::Array, sigma::Array, prior::Float64)
+
+function calculatePosterior(data::Array{Float64, 1},
+                            mu::Array{Float64, 1},
+                            sigma::Array{Float64, 2},
+                            prior::Float64)
+
     return prior * pdf(MvNormal(mu, sigma), data)
 end
 
-function makeArrayRatio(posteriors)
-    return sum(posteriors) == 0 ? posteriors : posteriors / sum(posteriors)
+
+function makeArrayRatio(posteriors::Array{Float64, 1})
+
+    return sum(posteriors) == 0.0 ? posteriors : posteriors / sum(posteriors)
 end
 
-function estimateNumberOfClusterDataPoints(posteriors::Array)
+
+function estimateNumberOfClusterDataPoints(posteriors::Array{Array{Float64, 1}, 1})
+
     clusterNum = length(posteriors[1])
     numberOfClusterDataPoints = zeros(clusterNum)
     for posterior in posteriors
         numberOfClusterDataPoints += posterior
     end
+
     return numberOfClusterDataPoints
 end
 
-function updateMu(posteriors, data, numberOfClusterDataPoints)
-    updatedMuArray = []
-    for k in 1:length(numberOfClusterDataPoints)
-        muSum = 0
-        for i in 1:size(data)[1]
-            muSum += posteriors[i][k] * data[i, :]
+
+function updateMu(posteriors::Array{Array{Float64, 1}},
+                  data::Array{Float64, 2},
+                  numberOfClusterDataPoints::Array{Float64})
+
+    numberOfCluster = length(numberOfClusterDataPoints)
+
+    updatedMuArray = Array{Array{Float64, 1}}(numberOfCluster)
+    for cluster in 1:numberOfCluster
+        muSum = zero(Float64)
+        for dataIndex in 1:size(data)[1]
+            muSum += posteriors[dataIndex][cluster] * data[dataIndex, :]
         end
-        push!(updatedMuArray, muSum/numberOfClusterDataPoints[k])
+        updatedMuArray[cluster] = muSum/numberOfClusterDataPoints[cluster]
     end
     return updatedMuArray
 end
 
-function updateSigma(posteriors, data, numberOfClusterDataPoints, mu)
-    updatedSigmaArray = []
-    for k in 1:length(numberOfClusterDataPoints)
-        sigmaSum = 0
-        for i in 1:size(data)[1]
-            sigmaSum += posteriors[i][k] * (data[i, :] - mu[k]) * (data[i, :] - mu[k])'
+
+function updateSigma(posteriors::Array{Array{Float64, 1}},
+                     data::Array{Float64, 2},
+                     numberOfClusterDataPoints::Array{Float64},
+                     mu::Array{Array{Float64, 1}})
+
+    rowSize, colSize = size(data)
+    numberOfCluster = length(numberOfClusterDataPoints)
+
+    updatedSigmaArray = Array{Array{Float64, 2}}(numberOfCluster)
+    for cluster in 1:numberOfCluster
+        sigmaSum = zero(rand(colSize, colSize))
+        for dataIndex in 1:rowSize
+            sigmaSum += posteriors[dataIndex][cluster] * (data[dataIndex, :] - mu[cluster]) * (data[dataIndex, :] - mu[cluster])'
         end
-        push!(updatedSigmaArray, sigmaSum/numberOfClusterDataPoints[k])
+        updatedSigmaArray[cluster] = sigmaSum/numberOfClusterDataPoints[cluster]
     end
     return updatedSigmaArray
 end
 
-function updateMix(numberOfClusterDataPoints)
+
+function updateMix(numberOfClusterDataPoints::Array{Float64})
+
     return numberOfClusterDataPoints / sum(numberOfClusterDataPoints)
 end
 
-function adjustToSymmetricMatrix(matrix)
-    for r in 1:size(matrix)[1]
-        for c in 1:size(matrix)[2]
-            if c > r
-                matrix[r, c] = matrix[c, r]
+
+function adjustToSymmetricMatrix(matrix::Array{Float64, 2})
+
+    rowSize, colSize = size(matrix)
+
+    symmetricMatrix = deepcopy(matrix)
+
+    for rowIndex in 1:rowSize
+        for colIndex in 1:colSize
+            if colIndex > rowIndex
+                symmetricMatrix[rowIndex, colIndex] = matrix[colIndex, rowIndex]
             end
         end
     end
-    return matrix
+    return symmetricMatrix
 end
-
-function argMax(array::Array)
-    return sortperm(array)[length(array)]
-end
-

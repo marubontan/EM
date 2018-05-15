@@ -61,6 +61,7 @@ end
 
 
 function initializeParameters(data, k::Int)
+
     numberOfVariables = size(data)[2]
     mu = [rand(Normal(0, 100), numberOfVariables) for _ in 1:k]
     sigma = [10000 * eye(numberOfVariables) for _ in 1:k]
@@ -93,6 +94,7 @@ end
 
 
 function mStep(data, posteriors)
+
     numberOfClusterDataPoints = estimateNumberOfClusterDataPoints(posteriors)
 
     updatedMu = updateMu(posteriors, data, numberOfClusterDataPoints)
@@ -104,11 +106,13 @@ end
 
 
 function checkConvergence(posterior, updatedPosterior)
+
     return isapprox(posterior, updatedPosterior)
 end
 
 
 function calcLogLikelihood(data, mu, sigma, mix, posterior)
+
     logLikelihood = 0.0
     for i in 1:size(data)[1]
         for k in 1:length(mix)
@@ -165,6 +169,7 @@ end
 
 
 function updateSigma(posteriors::Array{Array{Float64, 1}},
+
     data::Array{Float64, 2},
     numberOfClusterDataPoints::Array{Float64},
     mu::Array{Array{Float64, 1}})
@@ -183,18 +188,24 @@ function updateSigma(posteriors::Array{Array{Float64, 1}},
 end
 
 
-function updateMix(numberOfClusterDataPoints)
+function updateMix(numberOfClusterDataPoints::Array{Float64})
+
     return numberOfClusterDataPoints / sum(numberOfClusterDataPoints)
 end
 
 
 function adjustToSymmetricMatrix(matrix::Array{Float64, 2})
-    for r in 1:size(matrix)[1]
-        for c in 1:size(matrix)[2]
-            if c > r
-                matrix[r, c] = matrix[c, r]
+
+    rowSize, colSize = size(matrix)
+
+    symmetricMatrix = deepcopy(matrix)
+
+    for rowIndex in 1:rowSize
+        for colIndex in 1:colSize
+            if colIndex > rowIndex
+                symmetricMatrix[rowIndex, colIndex] = matrix[colIndex, rowIndex]
             end
         end
     end
-    return matrix
+    return symmetricMatrix
 end

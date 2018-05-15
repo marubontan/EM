@@ -58,7 +58,15 @@ end
     groupOneA = rand(MvNormal([1,1], eye(2)), 100)
     groupTwoA = rand(MvNormal([10,10], eye(2)), 100)
     dataA = hcat(groupOneA, groupTwoA)'
+
+    muInit = [[0.0, 0.0], [20.0, 20.0]]
+    sigmaInit = [10.0 * eye(2), 10.0 * eye(2)]
+    mixInit = [0.5, 0.5]
     @test_nowarn EM(dataA, 2)
+    @test_nowarn EM(dataA, 2; initialization=Initialization(muInit, sigmaInit, mixInit))
+
+    muInitError = [[0.0, 0.0], [20.0, 20.0], [1.0, 2.0]]
+    @test_throws AssertionError EM(dataA, 2; initialization=Initialization(muInitError, sigmaInit, mixInit))
 
     groupOneB = rand(MvNormal([1,1], eye(2)), 100)
     groupTwoB = rand(MvNormal([1000,1000], eye(2)), 1000)
@@ -75,6 +83,8 @@ end
     groupThreeD = rand(MvNormal([-1000,-1000,10,50], eye(4)), 1000)
     dataD = hcat(groupOneD, groupTwoD, groupThreeD)'
     @test_nowarn EM(dataD, 3)
+
+    @test_throws AssertionError EM(dataA, 1000)
 end
 
 @testset "checkConvergence" begin

@@ -1,28 +1,43 @@
 using Distributions
 
-struct EMResults{T<:Array}
-    mu::T
-    sigma::T
-    mix::T
-    posterior::T
-    logLikeLihoods::T
+struct EMResults
+    mu::Array{Array{Array{Float64, 1}}}
+    sigma::Array{Array{Array{Float64, 2}}}
+    mix::Array{Array{Float64, 1}}
+    posterior::Array{Array{Array{Float64, 1}}}
+    logLikeLihoods::Array{Float64}
     iterCount::Int
 end
 
 
 struct Initialization
-    mu::Array
-    sigma::Array
-    mix::Array
+    mu::Array{Array{Float64, 1}}
+    sigma::Array{Array{Float64, 2}}
+    mix::Array{Float64, 1}
 end
 
 
 # TODO: there are two types of bugs. One, the sigma becomes non-positive definite. Two, the whole posteriors become zero and parameters become NaN.
-function EM(data, k; initialization=nothing)
+function EM(data::Array{Float64, 2}, k::Int; initialization=nothing)
+
+    rowSize, colSize = size(data)
+
+    @assert 2 <= k < rowSize
 
     if initialization == nothing
+
         mu, sigma, mix = initializeParameters(data, k)
     elseif typeof(initialization) == Initialization
+
+        @assert length(initialization.mu) == k
+        @assert length(initialization.mu[1]) == colSize
+
+        @assert length(initialization.sigma) == k
+        @assert size(initialization.sigma[1]) == (colSize, colSize)
+
+        @assert length(initialization.mix) == k
+        @assert length(initialization.mu[1]) == colSize
+
         mu, sigma, mix = (initialization.mu, initialization.sigma, initialization.mix)
     else
         error("The argument, initialization, is not valid.")
@@ -138,7 +153,7 @@ function makeArrayRatio(posteriors::Array{Float64, 1})
 end
 
 
-function estimateNumberOfClusterDataPoints(posteriors::Array{Float64})
+function estimateNumberOfClusterDataPoints(posteriors::Array{Array{Float64, 1}, 1})
 
     clusterNum = length(posteriors[1])
     numberOfClusterDataPoints = zeros(clusterNum)

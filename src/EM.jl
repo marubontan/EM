@@ -5,8 +5,9 @@ struct EMResults
     sigma::Array{Array{Array{Float64, 2}}}
     mix::Array{Array{Float64, 1}}
     posterior::Array{Array{Array{Float64, 1}}}
-    logLikeLihoods::Array{Float64}
+    logLikelihoods::Array{Float64}
     iterCount::Int
+    maxIter::Int
 end
 
 
@@ -18,7 +19,7 @@ end
 
 
 # TODO: there are two types of bugs. One, the sigma becomes non-positive definite. Two, the whole posteriors become zero and parameters become NaN.
-function EM(data::Array{Float64, 2}, k::Int; initialization=nothing)
+function EM(data::Array{Float64, 2}, k::Int; initialization=nothing, maxIter=10000)
 
     rowSize, colSize = size(data)
 
@@ -44,34 +45,41 @@ function EM(data::Array{Float64, 2}, k::Int; initialization=nothing)
     end
 
     posterior = eStep(data, mu, sigma, mix)
-    muArray = []
-    sigmaArray = []
-    mixArray = []
-    posteriorArray = []
-    logLikelihoods = []
+    muArray = Array{Array{Array{Float64, 1}}}(maxIter)
+    sigmaArray = Array{Array{Array{Float64, 2}}}(maxIter)
+    mixArray = Array{Array{Float64, 1}}(maxIter)
+    posteriorArray = Array{Array{Array{Float64, 1}}}(maxIter)
+    logLikelihoods = Array{Float64}(maxIter)
     iterCount = zero(1)
     converged = false
-    while !converged
+    while !converged && iterCount < maxIter
 
         mu, sigma, mix = mStep(data, posterior)
         # TODO: do proper experiment to check the case this needs
         sigma = [adjustToSymmetricMatrix(sig) for sig in sigma]
         posteriorTemp = eStep(data, mu, sigma, mix)
 
-        push!(logLikelihoods, calcLogLikelihood(data, mu, sigma, mix, posteriorTemp))
-        push!(muArray, mu)
-        push!(sigmaArray, sigma)
-        push!(mixArray, mix)
-        push!(posteriorArray, posteriorTemp)
+        logLikelihoods[iterCount+1] = calcLogLikelihood(data, mu, sigma, mix, posteriorTemp)
+        muArray[iterCount+1] = mu
+        sigmaArray[iterCount+1] = sigma
+        mixArray[iterCount+1] = mix
+        posteriorArray[iterCount+1] = posteriorTemp
         iterCount += 1
         if iterCount >= 2
-            if checkConvergence(logLikelihoods[end-1], logLikelihoods[end])
+            if checkConvergence(logLikelihoods[iterCount-1], logLikelihoods[iterCount])
                 converged = true
             end
         end
         posterior = posteriorTemp
     end
-    return EMResults(muArray, sigmaArray, mixArray, posteriorArray, logLikelihoods, iterCount)
+
+    return EMResults(muArray[1:iterCount],
+                     sigmaArray[1:iterCount],
+                     mixArray[1:iterCount],
+                     posteriorArray[1:iterCount],
+                     logLikelihoods[1:iterCount],
+                     iterCount,
+                     maxIter)
 end
 
 

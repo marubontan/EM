@@ -84,6 +84,8 @@ end
     dataD = hcat(groupOneD, groupTwoD, groupThreeD)'
     @test_nowarn EM(dataD, 3)
 
+    @test_nowarn EM(dataA, 2; maxIter=100) 
+
     @test_throws AssertionError EM(dataA, 1000)
 end
 

@@ -8,6 +8,7 @@ struct EMResults
     logLikelihoods::Array{Float64}
     iterCount::Int
     maxIter::Int
+    converged::Bool
 end
 
 
@@ -51,6 +52,7 @@ function EM(data::Array{Float64, 2}, k::Int; initialization=nothing, maxIter=100
     posteriorArray = Array{Array{Array{Float64, 1}}}(maxIter)
     logLikelihoods = Array{Float64}(maxIter)
     iterCount = zero(1)
+    converged = false
     while iterCount < maxIter
 
         mu, sigma, mix = mStep(data, posterior)
@@ -66,6 +68,7 @@ function EM(data::Array{Float64, 2}, k::Int; initialization=nothing, maxIter=100
         iterCount += 1
         if iterCount >= 2
             if checkConvergence(logLikelihoods[iterCount-1], logLikelihoods[iterCount])
+                converged = true
                 break
             end
         end
@@ -77,7 +80,8 @@ function EM(data::Array{Float64, 2}, k::Int; initialization=nothing, maxIter=100
                      posteriorArray[1:iterCount],
                      logLikelihoods[1:iterCount],
                      iterCount,
-                     maxIter)
+                     maxIter,
+                     converged)
 end
 
 

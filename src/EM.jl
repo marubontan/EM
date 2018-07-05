@@ -8,6 +8,7 @@ struct EMResults
     logLikelihoods::Array{Float64}
     iterCount::Int
     maxIter::Int
+    converged::Bool
 end
 
 
@@ -52,25 +53,25 @@ function EM(data::Array{Float64, 2}, k::Int; initialization=nothing, maxIter=100
     logLikelihoods = Array{Float64}(maxIter)
     iterCount = zero(1)
     converged = false
-    while !converged && iterCount < maxIter
+    while iterCount < maxIter
 
         mu, sigma, mix = mStep(data, posterior)
         # TODO: do proper experiment to check the case this needs
         sigma = [adjustToSymmetricMatrix(sig) for sig in sigma]
-        posteriorTemp = eStep(data, mu, sigma, mix)
+        posterior = eStep(data, mu, sigma, mix)
 
-        logLikelihoods[iterCount+1] = calcLogLikelihood(data, mu, sigma, mix, posteriorTemp)
+        logLikelihoods[iterCount+1] = calcLogLikelihood(data, mu, sigma, mix, posterior)
         muArray[iterCount+1] = mu
         sigmaArray[iterCount+1] = sigma
         mixArray[iterCount+1] = mix
-        posteriorArray[iterCount+1] = posteriorTemp
+        posteriorArray[iterCount+1] = posterior
         iterCount += 1
         if iterCount >= 2
             if checkConvergence(logLikelihoods[iterCount-1], logLikelihoods[iterCount])
                 converged = true
+                break
             end
         end
-        posterior = posteriorTemp
     end
 
     return EMResults(muArray[1:iterCount],
@@ -79,10 +80,12 @@ function EM(data::Array{Float64, 2}, k::Int; initialization=nothing, maxIter=100
                      posteriorArray[1:iterCount],
                      logLikelihoods[1:iterCount],
                      iterCount,
-                     maxIter)
+                     maxIter,
+                     converged)
 end
 
 
+#TODO: inappropriate initialization
 function initializeParameters(data, k::Int)
 
     numberOfVariables = size(data)[2]
@@ -127,7 +130,7 @@ function mStep(data, posteriors)
     return updatedMu, updatedSigma, updatedMix
 end
 
-
+#TODO: should be more strict??
 function checkConvergence(posterior, updatedPosterior)
 
     return isapprox(posterior, updatedPosterior)

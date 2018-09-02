@@ -46,11 +46,11 @@ function EM(data::Array{Float64, 2}, k::Int; initialization=nothing, maxIter=100
     end
 
     posterior = eStep(data, mu, sigma, mix)
-    muArray = Array{Array{Array{Float64, 1}}}(maxIter)
-    sigmaArray = Array{Array{Array{Float64, 2}}}(maxIter)
-    mixArray = Array{Array{Float64, 1}}(maxIter)
-    posteriorArray = Array{Array{Array{Float64, 1}}}(maxIter)
-    logLikelihoods = Array{Float64}(maxIter)
+    muArray = Array{Array{Array{Float64, 1}}}(undef, maxIter)
+    sigmaArray = Array{Array{Array{Float64, 2}}}(undef, maxIter)
+    mixArray = Array{Array{Float64, 1}}(undef, maxIter)
+    posteriorArray = Array{Array{Array{Float64, 1}}}(undef, maxIter)
+    logLikelihoods = Array{Float64}(undef, maxIter)
     iterCount = zero(1)
     converged = false
     while iterCount < maxIter
@@ -90,7 +90,7 @@ function initializeParameters(data, k::Int)
 
     numberOfVariables = size(data)[2]
     mu = [rand(Normal(0, 100), numberOfVariables) for _ in 1:k]
-    sigma = [10000 * eye(numberOfVariables) for _ in 1:k]
+    sigma = [10000 * make_eye(numberOfVariables) for _ in 1:k]
     mixTemp = rand(k)
     mix = mixTemp / sum(mixTemp)
     return mu, sigma, mix
@@ -104,9 +104,9 @@ function eStep(data::Array{Float64, 2},
 
     numberOfDataPoint = size(data)[1]
 
-    posteriorArray = Array{Array{Float64, 1}}(numberOfDataPoint)
+    posteriorArray = Array{Array{Float64, 1}}(undef, numberOfDataPoint)
     for dataIndex in 1:numberOfDataPoint
-        posteriors = Array{Float64}(length(mix))
+        posteriors = Array{Float64}(undef, length(mix))
         for j in 1:length(mix)
             posteriors[j] = calculatePosterior(data[dataIndex,:],
                                                mu[j],
@@ -182,7 +182,7 @@ function updateMu(posteriors::Array{Array{Float64, 1}},
 
     numberOfCluster = length(numberOfClusterDataPoints)
 
-    updatedMuArray = Array{Array{Float64, 1}}(numberOfCluster)
+    updatedMuArray = Array{Array{Float64, 1}}(undef, numberOfCluster)
     for cluster in 1:numberOfCluster
         muSum = zero(Float64)
         for dataIndex in 1:size(data)[1]
@@ -202,7 +202,7 @@ function updateSigma(posteriors::Array{Array{Float64, 1}},
     rowSize, colSize = size(data)
     numberOfCluster = length(numberOfClusterDataPoints)
 
-    updatedSigmaArray = Array{Array{Float64, 2}}(numberOfCluster)
+    updatedSigmaArray = Array{Array{Float64, 2}}(undef, numberOfCluster)
     for cluster in 1:numberOfCluster
         sigmaSum = zero(rand(colSize, colSize))
         for dataIndex in 1:rowSize
@@ -234,4 +234,12 @@ function adjustToSymmetricMatrix(matrix::Array{Float64, 2})
         end
     end
     return symmetricMatrix
+end
+
+function make_eye(num)
+    eye = zeros(num, num)
+    for i = 1:num
+        eye[i, i] = 1.0
+    end
+    return eye
 end

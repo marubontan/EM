@@ -1,14 +1,14 @@
-using Base.Test
+using Test
 using Distributions
 include("../src/EM.jl")
 
 @testset "support function" begin
-    sigmaA = eye(2)
+    sigmaA = make_eye(2)
     sigmaA[1,2] = 3.0
-    @test adjustToSymmetricMatrix(sigmaA) == eye(2)
-    sigmaB = eye(5)
+    @test adjustToSymmetricMatrix(sigmaA) == make_eye(2)
+    sigmaB = make_eye(5)
     sigmaB[1,2] = 8.0
-    @test adjustToSymmetricMatrix(sigmaB) == eye(5)
+    @test adjustToSymmetricMatrix(sigmaB) == make_eye(5)
 
 end
 
@@ -55,12 +55,12 @@ end
 end
 
 @testset "EM" begin
-    groupOneA = rand(MvNormal([1,1], eye(2)), 100)
-    groupTwoA = rand(MvNormal([10,10], eye(2)), 100)
+    groupOneA = rand(MvNormal([1,1], make_eye(2)), 100)
+    groupTwoA = rand(MvNormal([10,10], make_eye(2)), 100)
     dataA = hcat(groupOneA, groupTwoA)'
 
     muInit = [[0.0, 0.0], [20.0, 20.0]]
-    sigmaInit = [10.0 * eye(2), 10.0 * eye(2)]
+    sigmaInit = [10.0 * make_eye(2), 10.0 * make_eye(2)]
     mixInit = [0.5, 0.5]
     @test_nowarn EM(dataA, 2)
     @test_nowarn EM(dataA, 2; initialization=Initialization(muInit, sigmaInit, mixInit))
@@ -68,23 +68,23 @@ end
     muInitError = [[0.0, 0.0], [20.0, 20.0], [1.0, 2.0]]
     @test_throws AssertionError EM(dataA, 2; initialization=Initialization(muInitError, sigmaInit, mixInit))
 
-    groupOneB = rand(MvNormal([1,1], eye(2)), 100)
-    groupTwoB = rand(MvNormal([1000,1000], eye(2)), 1000)
+    groupOneB = rand(MvNormal([1,1], make_eye(2)), 100)
+    groupTwoB = rand(MvNormal([1000,1000], make_eye(2)), 1000)
     dataB = hcat(groupOneB, groupTwoB)'
     @test_nowarn EM(dataB, 2)
 
-    groupOneC = rand(MvNormal([1,1,1], eye(3)), 100)
-    groupTwoC = rand(MvNormal([1000,1000,10], eye(3)), 1000)
+    groupOneC = rand(MvNormal([1,1,1], make_eye(3)), 100)
+    groupTwoC = rand(MvNormal([1000,1000,10], make_eye(3)), 1000)
     dataC = hcat(groupOneC, groupTwoC)'
     @test_nowarn EM(dataC, 2)
 
-    groupOneD = rand(MvNormal([1,1,1,4], eye(4)), 100)
-    groupTwoD = rand(MvNormal([1000,1000,10,40], eye(4)), 1000)
-    groupThreeD = rand(MvNormal([-1000,-1000,10,50], eye(4)), 1000)
+    groupOneD = rand(MvNormal([1,1,1,4], make_eye(4)), 100)
+    groupTwoD = rand(MvNormal([1000,1000,10,40], make_eye(4)), 1000)
+    groupThreeD = rand(MvNormal([-1000,-1000,10,50], make_eye(4)), 1000)
     dataD = hcat(groupOneD, groupTwoD, groupThreeD)'
     @test_nowarn EM(dataD, 3)
 
-    @test_nowarn EM(dataA, 2; maxIter=100) 
+    @test_nowarn EM(dataA, 2; maxIter=100)
 
     @test_throws AssertionError EM(dataA, 1000)
 end

@@ -184,9 +184,9 @@ function updateMu(posteriors::Array{Array{Float64, 1}},
 
     updatedMuArray = Array{Array{Float64, 1}}(undef, numberOfCluster)
     for cluster in 1:numberOfCluster
-        muSum = zero(Float64)
+        muSum = zeros(size(data)[2])
         for dataIndex in 1:size(data)[1]
-            muSum += posteriors[dataIndex][cluster] * data[dataIndex, :]
+            muSum .+= posteriors[dataIndex][cluster] * data[dataIndex, :]
         end
         updatedMuArray[cluster] = muSum/numberOfClusterDataPoints[cluster]
     end

@@ -57,7 +57,7 @@ end
 @testset "EM" begin
     groupOneA = rand(MvNormal([1,1], make_eye(2)), 100)
     groupTwoA = rand(MvNormal([10,10], make_eye(2)), 100)
-    dataA = hcat(groupOneA, groupTwoA)'
+    dataA = vcat(groupOneA, groupTwoA)
 
     muInit = [[0.0, 0.0], [20.0, 20.0]]
     sigmaInit = [10.0 * make_eye(2), 10.0 * make_eye(2)]
@@ -70,18 +70,18 @@ end
 
     groupOneB = rand(MvNormal([1,1], make_eye(2)), 100)
     groupTwoB = rand(MvNormal([1000,1000], make_eye(2)), 1000)
-    dataB = hcat(groupOneB, groupTwoB)'
+    dataB = vcat(groupOneB, groupTwoB)
     @test_nowarn EM(dataB, 2)
 
     groupOneC = rand(MvNormal([1,1,1], make_eye(3)), 100)
     groupTwoC = rand(MvNormal([1000,1000,10], make_eye(3)), 1000)
-    dataC = hcat(groupOneC, groupTwoC)'
+    dataC = vcat(groupOneC, groupTwoC)
     @test_nowarn EM(dataC, 2)
 
     groupOneD = rand(MvNormal([1,1,1,4], make_eye(4)), 100)
     groupTwoD = rand(MvNormal([1000,1000,10,40], make_eye(4)), 1000)
     groupThreeD = rand(MvNormal([-1000,-1000,10,50], make_eye(4)), 1000)
-    dataD = hcat(groupOneD, groupTwoD, groupThreeD)'
+    dataD = vcat(groupOneD, groupTwoD, groupThreeD)
     @test_nowarn EM(dataD, 3)
 
     @test_nowarn EM(dataA, 2; maxIter=100)
